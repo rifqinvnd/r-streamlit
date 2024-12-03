@@ -1,10 +1,10 @@
-# 💬 Chatbot template
+# R Prpject 
 
-A simple Streamlit app that shows how to build a chatbot using OpenAI's GPT-3.5.
+Streamlit App for research purpose 🤖
 
-[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://chatbot-template.streamlit.app/)
+[![Open in Streamlit](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://r-project.streamlit.app/)
 
-### How to run it on your own machine
+### How to run it on your local
 
 1. Install the requirements
 
