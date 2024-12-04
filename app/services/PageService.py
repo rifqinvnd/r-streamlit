@@ -1,6 +1,10 @@
 import streamlit as st
 import time
-from openai import OpenAI
+
+from app.common.enums import SidebarEnum
+from app.dtos.ai import AIChatDto, AIChatUserDto
+from app.services import DatabaseService
+from app.services.ai import AIService
 
 from .AuthenticationService import AuthenticationService
 
@@ -8,40 +12,47 @@ from .AuthenticationService import AuthenticationService
 class PageService:
     def __init__(self):
         self.authentication_service = AuthenticationService()
-        self.database_service = ""
+        self.database_service = DatabaseService()
+        self.ai_service = AIService()
+    
+    def map_pages(self, page_name: str):
+        function_map = {name: getattr(self, config["func"]) for name, config in SidebarEnum.items()}
+        
+        function_map[page_name]()
 
     def login_page(self):
         st.title('Welcome to R Project!')
         # st.logo("ALVA_White.png")
 
-        with st.form("Login"):
+        with st.form("login"):
             username = st.text_input("Input your username")
             password = st.text_input("Password", type="password")
             login_button = st.form_submit_button("Login")
 
             if login_button:
-                if self.authentication_service.authenticate(username, password):
-                    st.session_state.logged_in = True
-                    st.session_state.username = username
+                if username and password:
+                    if self.authentication_service.authenticate(username, password):
+                        st.session_state.logged_in = True
+                        st.session_state.username = username
 
-                    # log_login_activity(username)
+                        # log_login_activity(username)
 
-                    st.success("Logged in successfully!")
-                    time.sleep(1)
-                    st.rerun()
-                
-                st.error("Password is incorrect. You can retry or ask the data team for the correct password.")
+                        st.success("Logged in successfully!")
+                        time.sleep(1)
+                        st.rerun()
+                    
+                    st.error("Outsiders not allowed!")
+                    
+                st.error("Fill your username and password correctly!")
     
     def chatbot_page(self):
-        st.title("💬 Chatbot")
+        st.title("💬 Ripki AI")
         st.write(
-            "This is a simple chatbot that uses OpenAI's GPT-3.5 model to generate responses. "
-            "To use this app, you need to provide an OpenAI API key, which you can get [here](https://platform.openai.com/account/api-keys). "
-            "You can also learn how to build this app step by step by [following our tutorial](https://docs.streamlit.io/develop/tutorials/llms/build-conversational-apps)."
+            "Salutations, esteemed user! "
+            "My name is Ripki AI. I'm your daily dose of companion for all things experimental and geeky."
+            "Ready to dive into a world of intriguing questions and answers?"
         )
         
-        client = OpenAI(api_key=st.secrets["OPENAI_API_KEY"])
-
         if "messages" not in st.session_state:
             st.session_state.messages = []
 
@@ -49,16 +60,22 @@ class PageService:
             with st.chat_message(message["role"]):
                 st.markdown(message["content"])
 
-        if prompt := st.chat_input("Hello, I'm Ripki AI. How can I help you today?"):
-
-            st.session_state.messages.append({"role": "user", "content": prompt})
+        if new_message := st.chat_input("How can I assist your little curiousity today?"):
+            st.session_state.messages.append({"role": "user", "content": new_message})
+            
             with st.chat_message("user"):
-                st.markdown(prompt)
+                st.markdown(new_message)
 
-            stream = client.chat.completions.create(
-                model="gpt-3.5-turbo",
-                messages=st.session_state.messages,
-                stream=True,
+            stream = self.ai_service.chat(
+                AIChatDto(
+                    user=AIChatUserDto(
+                        name=st.session_state.username,
+                        id="test",
+                        language="en",
+                    ),
+                    message=new_message,
+                    stream=True,
+                )
             )
 
             with st.chat_message("assistant"):

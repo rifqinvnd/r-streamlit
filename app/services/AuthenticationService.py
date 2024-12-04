@@ -1,14 +1,17 @@
+from app.services.DatabaseService import DatabaseService
+
+
 class AuthenticationService:
     def __init__(self):
-        self.database_service = ""
+        self.database_service = DatabaseService()
 
     def authenticate(self, username: str, password: str):
-        login_info = self.database_service.get_user_login_info(
-            username=username,
-            password=password,
-        )
-
-        if login_info:
-            return True
+        user_data = self.database_service.get_user_data(username=username)
         
+        if (
+            username == user_data.get("username", "")
+            and password == user_data.get("password", "")
+        ):
+            return True
+
         return False
