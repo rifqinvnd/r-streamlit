@@ -24,21 +24,6 @@ class DatabaseService:
         except Exception as e:
             st.error(f"[Database] Error fetching user data: {e}")
             return {}
-        
-    def save_chat(self, message: str, response: str):
-        data = {
-            "user_id": str(uuid.uuid4()),
-            "message": message,
-            "response": response,
-        }
-        
-        try:
-            self.supabase.table("chat_history").insert(data).execute()
-            
-            logger.info("[Database] Chat saved successfully!")
-        except Exception as e:
-            logger.error(f"[Database] Error saving chat: {e}")
-            raise BadRequest(f"[Database] Error saving chat: {e}")
 
     def get_chat_history(self, username: str):
         user_id = self.get_user_id(username)
@@ -54,3 +39,28 @@ class DatabaseService:
         except Exception as e:
             logger.error(f"[Database] Error fetching chat history: {e}")
             return []
+
+    def insert_chat_history(self, message: str, response: str):
+        data = {
+            "user_id": str(uuid.uuid4()),
+            "message": message,
+            "response": response,
+        }
+        
+        try:
+            self.supabase.table("chat_history").insert(data).execute()
+            
+            logger.info("[Database] Chat saved successfully!")
+        except Exception as e:
+            logger.error(f"[Database] Error saving chat: {e}")
+            raise BadRequest(f"[Database] Error saving chat: {e}")
+    
+    def log_login_activity(self, user_id: int):        
+        try:
+            self.supabase.table("user_activity_logs").insert({"user_id": user_id}).execute()
+            
+            logger.info("[Database] User login activity logged successfully!")
+        except Exception as e:
+            logger.error(f"[Database] Error logging user login activity: {e}")
+            raise BadRequest(f"[Database] Error logging user login activity: {e}")
+        

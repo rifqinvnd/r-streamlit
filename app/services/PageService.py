@@ -49,8 +49,8 @@ class PageService:
         st.title("💬 Ripki AI")
         st.write(
             "Salutations, esteemed user! "
-            "My name is Ripki AI. I'm your daily dose of companion for all things experimental and geeky."
-            "Ready to dive into a world of intriguing questions and answers?"
+            "My name is Ripki AI. I'm your daily dose of companion for all things experimental and geeky. "
+            "Ready to dive into a world of intriguing questions and answers? "
         )
         
         if "messages" not in st.session_state:
