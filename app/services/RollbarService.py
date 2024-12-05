@@ -10,7 +10,7 @@ class RollbarService:
         logger.info("[Rollbar] Initializing Rollbar...")
         
         rollbar.init(
-            access_token='f8edea8a1a304fce90dbb9704df9771a',
+            access_token=st.secrets["ROLLBAR_ACCESS_TOKEN"],
             environment=st.secrets["STREAMLIT_ENV"],
         )
         
