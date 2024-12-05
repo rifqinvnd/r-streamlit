@@ -115,21 +115,6 @@ class AIService:
             }
         )
         
-        if args.user:
-            user_prompt = [
-                "You have received a new message from user:",
-                f"Name: {args.user.name}",
-                f"Language: {args.user.language}",                
-            ]
-            
-            prompts.append(
-                {
-                    "content": "\n".join(user_prompt),
-                    "role": role,
-                    "name": "user-profile",
-                }
-            )
-        
         response_format = [
             "You will give your response in a nerdy, geek, and professorized character.",
             "Give your response in plain text without markdown formatting!",
@@ -142,6 +127,26 @@ class AIService:
                 "name": "response-format",
             }
         )
+        
+        if args.user:
+            user_prompt = [
+                "You have received a new message from user:",
+                f"Name: {args.user.name}",
+                f"Language: {args.user.language}",                
+            ]
+            
+            if args.user.data:
+                user_prompt.extend(
+                    [f"{key.capitalize()}: {value}" for key, value in args.user.data.items()]
+                )
+            
+            prompts.append(
+                {
+                    "content": "\n".join(user_prompt),
+                    "role": role,
+                    "name": "user-profile",
+                }
+            )
         
         prompts.append(
             {

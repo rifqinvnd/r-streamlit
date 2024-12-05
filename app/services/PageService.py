@@ -65,13 +65,21 @@ class PageService:
             
             with st.chat_message("user"):
                 st.markdown(new_message)
+            
+            user_data = self.database_service.get_user_data(st.session_state.username)
+            user_profile = {
+                "profile": user_data.get("profile", ""),
+                "likes": user_data.get("likes", ""),
+                "dislikes": user_data.get("dislikes", "",)
+            }
 
             stream = self.ai_service.chat(
                 AIChatDto(
                     user=AIChatUserDto(
-                        name=st.session_state.username,
-                        id="test",
-                        language="en",
+                        name=user_data.get("name", st.session_state.username),
+                        id=str(user_data.get("id", "99999")),
+                        language=user_data.get("language", "en"),
+                        data=user_profile,
                     ),
                     message=new_message,
                     stream=True,

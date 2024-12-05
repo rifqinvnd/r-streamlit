@@ -34,7 +34,8 @@ def initialize_app():
 
             if st.sidebar.button("Logout"):
                 st.session_state.logged_in = False
-                st.session_state.user_email = None
+                st.session_state.username = None
+                st.session_state.messages = []
                 st.rerun()
                 
     except Exception as e:
