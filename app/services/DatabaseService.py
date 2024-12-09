@@ -4,6 +4,7 @@ from supabase import create_client, Client
 
 from app.common.error import BadRequest
 from app.common.log import logger
+from app.dtos.database import InsertUserChatHistoryDto
 
 
 class DatabaseService:
@@ -40,22 +41,16 @@ class DatabaseService:
             logger.error(f"[Database] Error fetching chat history: {e}")
             return []
 
-    def insert_chat_history(self, message: str, response: str):
-        data = {
-            "user_id": str(uuid.uuid4()),
-            "message": message,
-            "response": response,
-        }
-        
+    def insert_chat_history(self, data: InsertUserChatHistoryDto):
         try:
-            self.supabase.table("chat_history").insert(data).execute()
+            self.supabase.table("user_chat_history").insert(data.model_dump()).execute()
             
             logger.info("[Database] Chat saved successfully!")
         except Exception as e:
             logger.error(f"[Database] Error saving chat: {e}")
             raise BadRequest(f"[Database] Error saving chat: {e}")
     
-    def log_login_activity(self, user_id: int):        
+    def log_login_activity(self, user_id: int):
         try:
             self.supabase.table("user_activity_logs").insert({"user_id": user_id}).execute()
             

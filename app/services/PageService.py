@@ -35,7 +35,8 @@ class PageService:
                         st.session_state.logged_in = True
                         st.session_state.username = username
 
-                        # log_login_activity(username)
+                        user_id = self.database_service.get_user_data(username)["id"]
+                        self.database_service.log_login_activity(user_id)
 
                         st.success("Logged in successfully!")
                         time.sleep(1)
