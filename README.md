@@ -1,4 +1,4 @@
-# R Prpject 
+# R Project 
 
 Streamlit App for research purpose 🤖
 
