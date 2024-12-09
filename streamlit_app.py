@@ -14,11 +14,13 @@ if 'username' not in st.session_state:
     st.session_state.username = ""
 
 def initialize_app():
+    logger.info("[Streamlit] Starting app...")
     RollbarService.initialize()
     page_service = PageService()
+    logger.info("[Streamlit] App initialized!")
 
     try:
-        logger.info("[Streamlit] Starting app...")
+        
         if not st.session_state.logged_in:
             page_service.login_page()
         else:
