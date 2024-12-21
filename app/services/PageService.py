@@ -2,6 +2,7 @@ import streamlit as st
 import time
 
 from app.common.enums import SidebarEnum
+from app.dtos.database import InsertUserChatHistoryDto
 from app.dtos.ai import AIChatDto, AIChatUserDto
 from app.services import DatabaseService
 from app.services.ai import AIService
@@ -89,5 +90,13 @@ class PageService:
 
             with st.chat_message("assistant"):
                 response = st.write_stream(stream)
+            
+            self.database_service.insert_chat_history(
+                InsertUserChatHistoryDto(
+                    user_id=user_data["id"],
+                    message=new_message,
+                    response=response,
+                )
+            )
             
             st.session_state.messages.append({"role": "assistant", "content": response})
