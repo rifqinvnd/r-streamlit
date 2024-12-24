@@ -88,6 +88,20 @@ class AIService:
         return response["category"]
 
     @func_logger
+    def define_conversation_title(self, message: str) -> str:
+        response = self.openai_chat_service.create_chat(
+            OpenAICreateChatDto(
+                messages=self.get_define_conversation_title_prompt(message),
+                model="gpt-4o-mini",
+            )
+        )
+        
+        if response.error:
+            raise BadRequest(f"Failed to get response from OpenAI: {response.message}!")
+        
+        return response.data.completion.message.content.replace('"', "")
+
+    @func_logger
     def get_ai_prompt(self, args: AIChatDto, category: str) -> List[ChatCompletionMessageParam]:
         prompts = []
         
@@ -203,3 +217,23 @@ class AIService:
                 "parameters": schema,
             }
         )
+    
+    def get_define_conversation_title_prompt(self, message: str) -> List[ChatCompletionMessageParam]:
+        profile = [
+            "You are an expert in determining a conversation title.",
+            "You have to determine which title best summarizing the core of the conversation.",
+            "Ensure the title is concise and descriptive with no more than 6-8 words.",
+        ]
+        
+        return [
+            ChatCompletionSystemMessageParam(
+                role="system",
+                content="\n".join(profile),
+                name="profile",
+            ),
+            ChatCompletionUserMessageParam(
+                role="user",
+                content=f"Determine the title of this message: {message}",
+                name="new-message",
+            )
+        ]

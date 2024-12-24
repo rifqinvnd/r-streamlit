@@ -1,6 +1,10 @@
 SidebarEnum = {
-    "Chatbot": {
+    "Ripki AI": {
+        "logo": "robot",
+        "func": "new_chat_page"
+    },
+    "Chat History": {
         "logo": "chat-left-text",
-        "func": "chatbot_page"
+        "func": "chat_history_page"
     }
 }
