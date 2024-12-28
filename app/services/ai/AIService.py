@@ -13,6 +13,7 @@ from app.common.error import BadRequest
 from app.common.log import logger
 from app.dtos.ai import AIChatDto, AIPromptDto
 from app.dtos.openai import OpenAICreateChatDto
+from app.services import DatabaseService
 from app.services.openai import OpenAIChatService
 from .tools import (
     CategorizeMessageTool,
@@ -23,17 +24,17 @@ from .tools import (
 
 class AIService:
     def __init__(self) -> None:
+        self.database_service = DatabaseService()
         self.openai_chat_service = OpenAIChatService()
     
     @func_logger
     def chat(self, args: AIChatDto) -> str:
-        category = self.categorize_message(args)
+        # category = self.categorize_message(args)
                 
         response = self.talk(
             AIPromptDto(
                 **args.model_dump(),
-                category=category,
-                prompts=self.get_ai_prompt(args, category)
+                prompts=self.get_ai_prompt(args)
             )
         )
 
@@ -41,19 +42,19 @@ class AIService:
     
     @func_logger
     def talk(self, args: AIPromptDto) -> str:
-        model = CategoryModelEnum.to_dict().get(args.category)
+        # model = CategoryModelEnum.to_dict().get(args.category)
         
-        logger.info(CategoryModelEnum.to_dict())
+        # logger.info(CategoryModelEnum.to_dict())
         
-        if not model:
-            logger.warn(f"Category '{args.category}' is not a valid category!")
-            model = "gpt-4o-mini"
+        # if not model:
+        #     logger.warn(f"Category '{args.category}' is not a valid category!")
+        #     model = "gpt-4o-mini"
         
         response = self.openai_chat_service.create_chat(
             OpenAICreateChatDto(
                 messages=args.prompts,
-                model=model,
-                user=args.user.id,
+                model=args.model,
+                user=str(args.user.id),
                 stream=args.stream,
             )
         )
@@ -102,45 +103,19 @@ class AIService:
         return response.data.completion.message.content.replace('"', "")
 
     @func_logger
-    def get_ai_prompt(self, args: AIChatDto, category: str) -> List[ChatCompletionMessageParam]:
+    def get_ai_prompt(self, args: AIChatDto) -> List[ChatCompletionMessageParam]:
         prompts = []
         
-        profile = [
-            "Your name is Ripki AI",
-            "You are created by Rifqi, an AI Engineer specialist.", 
-            "Rifqi is an AI Engineer, working at a Marketing Agency company called \"Olrange\".", 
-            "Rifqi has a girlfriend named Nasya.",
-            
-            "You are a nerd that experts in any fields of works.",
-            "You have to be detailed on giving even unnecessary things like a nerd",
-            "You have mastered any study, work, or even hobby related activity.",
-             
-            "In giving your response, you always have a deep thought to give the most geeky answer.",
-        ]
+        ai_agent_prompts = self.database_service.get_ai_agent_prompts(args.user.id)
         
-        # TODO: MAPPING, MOVE TO EITHER ENUMS OR DB
-        role = "user" if category == "deep_conversation" else "system"
-        
-        prompts.append(
-            {
-                "content": "\n".join(profile),
-                "role": role,
-                "name": "profile",
-            }
-        )
-        
-        response_format = [
-            "You will give your response in a nerdy, geek, and professorized character.",
-            "Give your response in plain text without markdown formatting!",
-        ]
-        
-        prompts.append(
-            {
-                "content": "\n".join(response_format),
-                "role": role,
-                "name": "response-format",
-            }
-        )
+        for prompt in ai_agent_prompts:
+            prompts.append(
+                {
+                    "name": prompt["prompt_name"], 
+                    "content": prompt["content"], 
+                    "role": prompt["role"]
+                }
+            )
         
         if args.user:
             user_prompt = [
@@ -157,7 +132,7 @@ class AIService:
             prompts.append(
                 {
                     "content": "\n".join(user_prompt),
-                    "role": role,
+                    "role": "user",
                     "name": "user-profile",
                 }
             )
@@ -172,7 +147,7 @@ class AIService:
         
         prompts = [
             ChatCompletionUserMessageParam(**prompt) 
-            if prompt.get("role") == "user" 
+            if prompt["role"] == "user" 
             else ChatCompletionSystemMessageParam(**prompt)
             for prompt in prompts 
         ]

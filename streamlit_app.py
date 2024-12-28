@@ -7,6 +7,7 @@ from app.common.log import logger
 from app.services import PageService, RollbarService
 
 
+# Instantiate session states
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
@@ -28,13 +29,18 @@ if 'conversation_title' not in st.session_state:
 if 'page_name' not in st.session_state:
     st.session_state.page_name = ""
 
+if 'model' not in st.session_state:
+    st.session_state.model = ""
+
 logger.info("[Streamlit] Starting app...")
+
 RollbarService.initialize()
 page_service = PageService()
+
 logger.info("[Streamlit] App initialized!")
 
 try:
-    
+    # Check if user is logged in
     if not st.session_state.logged_in:
         page_service.login_page()
     else:
