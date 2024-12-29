@@ -7,8 +7,14 @@ class AIChatUserDto(BaseModel):
     language: str = "en"
     data: dict = {}
 
+class AIChatAgentDto(BaseModel):
+    id: int
+    name: str
+    model: str
+
 class AIChatDto(BaseModel):
-    user: AIChatUserDto = None
     message: str
+    user: AIChatUserDto = None
+    agent: AIChatAgentDto = None
     model: str = "gpt-4o-mini"
     stream: bool = False

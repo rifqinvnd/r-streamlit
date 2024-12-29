@@ -1,5 +1,5 @@
 from .AIChatDto import (
     AIChatDto,
+    AIChatAgentDto,
     AIChatUserDto,
 )
-from .AIPromptDto import AIPromptDto

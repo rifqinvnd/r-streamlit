@@ -16,23 +16,33 @@ class DatabaseService:
         )
     
     @func_logger
-    def get_ai_agents(self, user_id: int) -> dict:
+    def get_ai_agents(self) -> list[dict]:
         try:
-            response = self.supabase.rpc("get_ai_agents", params={"user_id": user_id}).execute()
+            response = self.supabase.table("ai_agents").select("*").execute()
 
             return response.data
         except Exception as e:
-            logger.error(f"[Database] Error getting AI agent: {e}")
+            logger.error(f"[Database] Error getting AI agents: {e}")
+            return []
+    
+    @func_logger
+    def get_user_ai_agent(self, user_id: int) -> dict:
+        try:
+            response = self.supabase.rpc("get_user_ai_agent", params={"user_id": user_id}).execute()
+
+            return response.data
+        except Exception as e:
+            logger.error(f"[Database] Error getting user AI agent: {e}")
             return {}
     
     @func_logger
-    def get_ai_agent_prompts(self, user_id: int) -> list[dict]:
+    def get_ai_agent_prompts(self, agent_id: int) -> list[dict]:
         try:
-            response = self.supabase.rpc("get_ai_agent_prompts", params={"user_id": user_id}).execute()
-            
-            return response.data
+            response = self.supabase.rpc("get_ai_agent_prompts", params={"agent_id": agent_id}).execute()
+
+            return [prompt for prompt in response.data if prompt['agent_id'] == agent_id]
         except Exception as e:
-            logger.error(f"[Database] Error getting AI agent prompts for user id {user_id}: {e}")
+            logger.error(f"[Database] Error getting AI agent prompts for agent id {agent_id}: {e}")
             return []
     
     def get_user_data(self, username: str) -> dict:

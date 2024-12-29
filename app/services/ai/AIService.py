@@ -11,14 +11,13 @@ from typing import List
 from app.common.decorator import func_logger
 from app.common.error import BadRequest
 from app.common.log import logger
-from app.dtos.ai import AIChatDto, AIPromptDto
+from app.dtos.ai import AIChatDto
 from app.dtos.openai import OpenAICreateChatDto
 from app.services import DatabaseService
 from app.services.openai import OpenAIChatService
 from .tools import (
     CategorizeMessageTool,
     CategoryEnum,
-    CategoryModelEnum,
 )
 
 
@@ -29,30 +28,9 @@ class AIService:
     
     @func_logger
     def chat(self, args: AIChatDto) -> str:
-        # category = self.categorize_message(args)
-                
-        response = self.talk(
-            AIPromptDto(
-                **args.model_dump(),
-                prompts=self.get_ai_prompt(args)
-            )
-        )
-
-        return response
-    
-    @func_logger
-    def talk(self, args: AIPromptDto) -> str:
-        # model = CategoryModelEnum.to_dict().get(args.category)
-        
-        # logger.info(CategoryModelEnum.to_dict())
-        
-        # if not model:
-        #     logger.warn(f"Category '{args.category}' is not a valid category!")
-        #     model = "gpt-4o-mini"
-        
         response = self.openai_chat_service.create_chat(
             OpenAICreateChatDto(
-                messages=args.prompts,
+                messages=self.get_ai_prompt(args),
                 model=args.model,
                 user=str(args.user.id),
                 stream=args.stream,
@@ -106,22 +84,23 @@ class AIService:
     def get_ai_prompt(self, args: AIChatDto) -> List[ChatCompletionMessageParam]:
         prompts = []
         
-        ai_agent_prompts = self.database_service.get_ai_agent_prompts(args.user.id)
+        if args.agent:
+            ai_agent_prompts = self.database_service.get_ai_agent_prompts(args.agent.id)
         
-        for prompt in ai_agent_prompts:
-            prompts.append(
-                {
-                    "name": prompt["prompt_name"], 
-                    "content": prompt["content"], 
-                    "role": prompt["role"]
-                }
-            )
-        
+            for prompt in ai_agent_prompts:
+                prompts.append(
+                    {
+                        "name": prompt["prompt_name"], 
+                        "content": prompt["content"], 
+                        "role": prompt["role"]
+                    }
+                )
+            
         if args.user:
             user_prompt = [
                 "You have received a new message from user:",
                 f"Name: {args.user.name}",
-                f"Language: {args.user.language}",                
+                f"Language: {args.user.language}",
             ]
             
             if args.user.data:

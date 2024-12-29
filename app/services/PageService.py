@@ -3,7 +3,11 @@ import time
 
 from app.common.enums import SidebarEnum
 from app.dtos.database import InsertUserChatHistoryDto
-from app.dtos.ai import AIChatDto, AIChatUserDto
+from app.dtos.ai import (
+    AIChatDto, 
+    AIChatAgentDto, 
+    AIChatUserDto,
+)
 from app.services import DatabaseService
 from app.services.ai import AIService
 
@@ -73,10 +77,34 @@ class PageService:
         )
         
         # Fetch AI agent for user
-        if not st.session_state.model:
-            ai_agent = self.database_service.get_ai_agents(st.session_state.user_id)
-            st.session_state.model = ai_agent["model"]
+        if not st.session_state.agent:
+            agent = self.database_service.get_user_ai_agent(st.session_state.user_id)
+            st.session_state.agent = {
+                "id": agent["agent_id"],
+                "name": agent["agent_name"],
+                "model": agent["model"]
+            }
         
+        @st.fragment    
+        def popover_character():
+            with st.popover(st.session_state.agent['name']):
+                # Streamlit dropdown option for ai agents
+                ai_agents = self.database_service.get_ai_agents()
+                
+                selected_agent = st.radio(
+                    label="Choose Character",
+                    options=[character["name"] for character in ai_agents],
+                    captions=[character["description"] for character in ai_agents],
+                    index=st.session_state.agent["id"] - 1,
+                    label_visibility="collapsed",
+                )
+
+                if selected_agent != st.session_state.agent["name"]:
+                    st.session_state.agent = next(agent for agent in ai_agents if agent["name"] == selected_agent)
+                    st.rerun(scope="fragment")
+        
+        popover_character()
+                
         # Set conversation title if exists
         if st.session_state.conversation_title:
             st.subheader(st.session_state.conversation_title, divider=True)
@@ -114,14 +142,15 @@ class PageService:
                 # Get AI response
                 stream = self.ai_service.chat(
                     AIChatDto(
+                        message=new_message,
                         user=AIChatUserDto(
                             name=user_data.get("name", st.session_state.username),
                             id=user_data.get("id", 99999),
                             language=user_data.get("language", "en"),
                             data=user_profile,
                         ),
-                        message=new_message,
-                        model=st.session_state.model,
+                        agent=AIChatAgentDto(**st.session_state.agent),
+                        model=st.session_state.agent["model"],
                         stream=True,
                     )
                 )

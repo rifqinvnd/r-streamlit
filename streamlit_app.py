@@ -29,8 +29,8 @@ if 'conversation_title' not in st.session_state:
 if 'page_name' not in st.session_state:
     st.session_state.page_name = ""
 
-if 'model' not in st.session_state:
-    st.session_state.model = ""
+if 'agent' not in st.session_state:
+    st.session_state.agent = {}
 
 logger.info("[Streamlit] Starting app...")
 
@@ -56,8 +56,13 @@ try:
 
         if st.sidebar.button("Logout"):
             st.session_state.logged_in = False
-            st.session_state.username = None
+            st.session_state.username = ""
+            st.session_state.user_id = ""
             st.session_state.messages = []
+            st.session_state.conversation_id = ""
+            st.session_state.conversation_title = ""
+            st.session_state.page_name = ""
+            st.session_state.agent = {}
             st.rerun()
             
 except Exception as e:
