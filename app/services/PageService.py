@@ -1,5 +1,4 @@
 import streamlit as st
-import time
 
 from app.common.enums import SidebarEnum
 from app.dtos.database import InsertUserChatHistoryDto
@@ -11,12 +10,9 @@ from app.dtos.ai import (
 from app.services import DatabaseService
 from app.services.ai import AIService
 
-from .AuthenticationService import AuthenticationService
-
 
 class PageService:
     def __init__(self):
-        self.authentication_service = AuthenticationService()
         self.database_service = DatabaseService()
         self.ai_service = AIService()
     
@@ -34,40 +30,6 @@ class PageService:
         function_map = {name: getattr(self, config["func"]) for name, config in SidebarEnum.items()}
         function_map[page_name]()
 
-    def login_page(self):
-        st.title('Welcome to R Project!')
-        # st.logo("ALVA_White.png")
-
-        # Set login form
-        with st.form("login"):
-            username = st.text_input("Input your username")
-            password = st.text_input("Password", type="password")
-            login_button = st.form_submit_button("Login")
-        
-            if login_button:
-                if username and password:
-                    # Authenticate username and password
-                    if self.authentication_service.authenticate(username, password):
-                        # Set session state logged in
-                        st.session_state.logged_in = True
-                        st.session_state.username = username
-
-                        # Set session user id
-                        user_id = self.database_service.get_user_data(username)["id"]
-                        st.session_state.user_id = user_id
-                        
-                        # Log login activity
-                        self.database_service.log_login_activity(user_id)
-
-                        # Add description and rerun streamlit
-                        st.success("Logged in successfully!")
-                        time.sleep(0.5)
-                        st.rerun()
-                    
-                    st.error("Outsiders not allowed!")
-                    
-                st.error("Fill your username and password correctly!")
-    
     def chat_page(self):
         st.title("💬 Ripki AI")
         st.write(
