@@ -99,6 +99,7 @@ class PageService:
                     label_visibility="collapsed",
                 )
 
+                # Change popover label
                 if selected_agent != st.session_state.agent["name"]:
                     st.session_state.agent = next(agent for agent in ai_agents if agent["name"] == selected_agent)
                     st.rerun(scope="fragment")
