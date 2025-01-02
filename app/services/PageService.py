@@ -113,6 +113,9 @@ class PageService:
         # Show streamlit built-in message container
         for message in st.session_state.messages:
             with st.chat_message(message["role"]):
+                if message.get("agent"):
+                    st.markdown(f':orange[**{message["agent"]}**]')
+                
                 st.markdown(message["content"])
 
         # Valid for new chat or chat history is chosen
@@ -157,6 +160,7 @@ class PageService:
                 )
 
                 with st.chat_message("assistant"):
+                    st.markdown(f':orange[**{st.session_state.agent["name"]}**]')
                     response = st.write_stream(stream)
                 
                 # Log chat history
@@ -165,11 +169,12 @@ class PageService:
                         user_id=user_data["id"],
                         message=new_message,
                         response=response,
+                        agent=st.session_state.agent["name"],
                         conversation_id=st.session_state.conversation_id,
                     )
                 )
                 
-                st.session_state.messages.append({"role": "assistant", "content": response})
+                st.session_state.messages.append({"role": "assistant", "content": response, "agent": st.session_state.agent["name"]})
     
     def new_chat_page(self):
         self.chat_page()
@@ -220,6 +225,6 @@ class PageService:
         
         for history in chat_history:
             messages.append({"role": "user", "content": history["message"]})
-            messages.append({"role": "assistant", "content": history["response"]})
+            messages.append({"role": "assistant", "content": history["response"], "agent": history["agent"]})
 
         return messages
