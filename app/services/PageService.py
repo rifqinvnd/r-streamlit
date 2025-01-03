@@ -2,7 +2,10 @@ import streamlit as st
 import time
 
 from app.common.enums import SidebarEnum
-from app.dtos.database import InsertUserChatHistoryDto
+from app.dtos.database import (
+    InsertUserChatHistoryDto,
+    UpdateUserDataDto,
+)
 from app.dtos.ai import (
     AIChatDto, 
     AIChatAgentDto, 
@@ -50,14 +53,13 @@ class PageService:
                     if self.authentication_service.authenticate(username, password):
                         # Set session state logged in
                         st.session_state.logged_in = True
-                        st.session_state.username = username
 
                         # Set session user id
-                        user_id = self.database_service.get_user_data(username)["id"]
-                        st.session_state.user_id = user_id
+                        user_data = self.database_service.get_user_data(username)
+                        st.session_state.user_data = user_data
                         
                         # Log login activity
-                        self.database_service.log_login_activity(user_id)
+                        self.database_service.log_login_activity(user_data["id"])
 
                         # Add description and rerun streamlit
                         st.success("Logged in successfully!")
@@ -78,14 +80,14 @@ class PageService:
         
         # Fetch AI agent for user
         if not st.session_state.agent:
-            agent = self.database_service.get_user_ai_agent(st.session_state.user_id)
+            agent = self.database_service.get_user_ai_agent(st.session_state.user_data["id"])
             st.session_state.agent = {
                 "id": agent["agent_id"],
                 "name": agent["agent_name"],
                 "model": agent["model"]
             }
         
-        @st.fragment    
+        @st.fragment
         def popover_character():
             with st.popover(st.session_state.agent['name']):
                 # Streamlit dropdown option for ai agents
@@ -105,7 +107,7 @@ class PageService:
                     st.rerun(scope="fragment")
         
         popover_character()
-                
+        
         # Set conversation title if exists
         if st.session_state.conversation_title:
             st.subheader(st.session_state.conversation_title, divider=True)
@@ -126,32 +128,28 @@ class PageService:
                 with st.chat_message("user"):
                     st.markdown(new_message)
                 
-                # Fetch additional user data from db
-                user_data = self.database_service.get_user_data(st.session_state.username)
-                
+                # Fetch additional user data from db                
                 # Set conversation title and id for new chat
                 if not st.session_state.conversation_id:
                     conversation_title = self.ai_service.define_conversation_title(new_message)
                     st.session_state.conversation_title = conversation_title
                     
-                    conversation_data = self.database_service.insert_conversation_title(conversation_title, user_data.get("id"))
+                    conversation_data = self.database_service.insert_conversation_title(conversation_title, st.session_state.user_data["id"])
                     st.session_state.conversation_id = conversation_data["id"]
                 
-                user_profile = {
-                    "profile": user_data.get("profile", ""),
-                    "likes": user_data.get("likes", ""),
-                    "dislikes": user_data.get("dislikes", "",),
-                }
-
                 # Get AI response
                 stream = self.ai_service.chat(
                     AIChatDto(
                         message=new_message,
                         user=AIChatUserDto(
-                            name=user_data.get("name", st.session_state.username),
-                            id=user_data.get("id", 99999),
-                            language=user_data.get("language", "en"),
-                            data=user_profile,
+                            name=st.session_state.user_data["name"],
+                            id=st.session_state.user_data["id"],
+                            language=st.session_state.user_data["language"],
+                            data={
+                                "profile": st.session_state.user_data["profile"],
+                                "likes": st.session_state.user_data["likes"],
+                                "dislikes": st.session_state.user_data["dislikes"],
+                            },
                         ),
                         agent=AIChatAgentDto(**st.session_state.agent),
                         model=st.session_state.agent["model"],
@@ -166,7 +164,7 @@ class PageService:
                 # Log chat history
                 self.database_service.insert_chat_history(
                     InsertUserChatHistoryDto(
-                        user_id=user_data["id"],
+                        user_id=st.session_state.user_data["id"],
                         message=new_message,
                         response=response,
                         agent=st.session_state.agent["name"],
@@ -181,7 +179,7 @@ class PageService:
     
     def chat_history_page(self):
         # Get chat history
-        chat_history = self.database_service.get_chat_history(st.session_state.username)
+        chat_history = self.database_service.get_chat_history(st.session_state.user_data["username"])
         chat_history = [chat for chat in chat_history if chat["conversation_id"]]
         
         # Set conversation ids
@@ -208,13 +206,39 @@ class PageService:
                 or not st.session_state.conversation_title
             ):
                 # Process chat history
-                st.session_state.messages = self.process_chat_history(chat_history)
+                st.session_state.messages = self.__process_chat_history(chat_history)
             
             st.session_state.conversation_title = selected_history
             
         self.chat_page()
+    
+    def profile_page(self):
+        st.header("Profile")
+        st.subheader(f"{st.session_state.user_data['name']} ({st.session_state.user_data['username']})")
+        st.markdown(st.session_state.user_data.get("profile", ""))
+    
+        # Editable fields
+        with st.form("edit_profile", border=False):
+            # description = 
+            likes = st.text_input("Likes", st.session_state.user_data.get("likes", ""), help="Separate by comma e.g. Sneaker, Pop-punk, Mobile Legends")
+            dislikes = st.text_input("Dislikes", st.session_state.user_data.get("dislikes", ""), help="Separate by comma  e.g. Vegetable, Seafood, Noobies")
+            language = st.selectbox("Language", ["en", "id"], index=["en", "id"].index(st.session_state.user_data.get("language", "en")))
+            
+            submit = st.form_submit_button("Save Profile")
+            
+            if submit:
+                self.database_service.update_user_data(
+                    UpdateUserDataDto(
+                        id=st.session_state.user_data["id"],
+                        likes=likes,
+                        dislikes=dislikes,
+                        language=language if language else "en",
+                    )
+                )
+            
+                st.toast("Profile updated successfully!", icon="✅️")
         
-    def process_chat_history(self, chat_history: list[dict]):
+    def __process_chat_history(self, chat_history: list[dict]):
         # Filter chat history by conversation id
         chat_history = [
             chat for chat in chat_history

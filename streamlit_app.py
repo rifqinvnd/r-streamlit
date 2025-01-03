@@ -11,11 +11,8 @@ from app.services import PageService, RollbarService
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
 
-if 'username' not in st.session_state:
-    st.session_state.username = ""
-
-if 'user_id' not in st.session_state:
-    st.session_state.user_id = ""
+if 'user_data' not in st.session_state:
+    st.session_state.user_data = {}
 
 if 'messages' not in st.session_state:
     st.session_state.messages = []
@@ -56,8 +53,7 @@ try:
 
         if st.sidebar.button("Logout"):
             st.session_state.logged_in = False
-            st.session_state.username = ""
-            st.session_state.user_id = ""
+            st.session_state.user_data = {}
             st.session_state.messages = []
             st.session_state.conversation_id = ""
             st.session_state.conversation_title = ""

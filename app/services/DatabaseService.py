@@ -5,7 +5,10 @@ from supabase import create_client, Client
 from app.common.error import BadRequest
 from app.common.decorator import func_logger
 from app.common.log import logger
-from app.dtos.database import InsertUserChatHistoryDto
+from app.dtos.database import (
+    InsertUserChatHistoryDto,
+    UpdateUserDataDto,
+)
 
 
 class DatabaseService:
@@ -25,26 +28,6 @@ class DatabaseService:
             logger.error(f"[Database] Error getting AI agents: {e}")
             return []
     
-    @func_logger
-    def get_user_ai_agent(self, user_id: int) -> dict:
-        try:
-            response = self.supabase.rpc("get_user_ai_agent", params={"user_id": user_id}).execute()
-
-            return response.data
-        except Exception as e:
-            logger.error(f"[Database] Error getting user AI agent: {e}")
-            return {}
-    
-    @func_logger
-    def get_ai_agent_prompts(self, agent_id: int) -> list[dict]:
-        try:
-            response = self.supabase.rpc("get_ai_agent_prompts", params={"agent_id": agent_id}).execute()
-
-            return [prompt for prompt in response.data if prompt['agent_id'] == agent_id]
-        except Exception as e:
-            logger.error(f"[Database] Error getting AI agent prompts for agent id {agent_id}: {e}")
-            return []
-    
     def get_user_data(self, username: str) -> dict:
         try:
             response = self.supabase.table("users").select("*").eq("username", username).execute()
@@ -56,6 +39,21 @@ class DatabaseService:
         except Exception as e:
             st.error(f"[Database] Error fetching user data: {e}")
             return {}
+    
+    def update_user_data(self, data: UpdateUserDataDto) -> None:
+        try:
+            (
+                self.supabase
+                .table("users")
+                .update(data.model_dump(exclude_none=True))
+                .eq("id", data.id)
+                .execute()
+            )
+            
+            logger.info("[Database] User data updated successfully!")
+        except Exception as e:
+            logger.error(f"[Database] Error updating user data: {e}")
+            raise BadRequest(f"[Database] Error updating user data: {e}")
 
     def get_chat_history(self, username: str) -> list[dict]:
         user_id = self.get_user_data(username)["id"]
@@ -96,6 +94,18 @@ class DatabaseService:
             logger.error(f"[Database] Error logging user login activity: {e}")
             raise BadRequest(f"[Database] Error logging user login activity: {e}")
     
+    def get_conversation_titles(self, conversation_ids: int | list[int]) -> list[dict]:
+        if isinstance(conversation_ids, int):
+            conversation_ids = [conversation_ids]
+        
+        try:
+            response = self.supabase.table("user_chat_titles").select("*").in_("id", conversation_ids).execute()
+            
+            return response.data
+        except Exception as e:
+            logger.error(f"[Database] Error fetching conversations: {e}")
+            return []
+    
     def insert_conversation_title(self, conversation_title: str, user_id: int) -> dict:
         try:
             response = self.supabase.table("user_chat_titles").insert({"title": conversation_title, "user_id": user_id}).execute()
@@ -107,15 +117,23 @@ class DatabaseService:
             logger.error(f"[Database] Error inserting user chat title: {e}")
             raise BadRequest(f"[Database] Error inserting user chat title: {e}")
     
-    def get_conversation_titles(self, conversation_ids: int | list[int]) -> list[dict]:
-        if isinstance(conversation_ids, int):
-            conversation_ids = [conversation_ids]
-        
+    @func_logger
+    def get_user_ai_agent(self, user_id: int) -> dict:
         try:
-            response = self.supabase.table("user_chat_titles").select("*").in_("id", conversation_ids).execute()
-            
+            response = self.supabase.rpc("get_user_ai_agent", params={"user_id": user_id}).execute()
+
             return response.data
         except Exception as e:
-            logger.error(f"[Database] Error fetching conversations: {e}")
+            logger.error(f"[Database] Error getting user AI agent: {e}")
+            return {}
+    
+    @func_logger
+    def get_ai_agent_prompts(self, agent_id: int) -> list[dict]:
+        try:
+            response = self.supabase.rpc("get_ai_agent_prompts", params={"agent_id": agent_id}).execute()
+
+            return [prompt for prompt in response.data if prompt['agent_id'] == agent_id]
+        except Exception as e:
+            logger.error(f"[Database] Error getting AI agent prompts for agent id {agent_id}: {e}")
             return []
         
