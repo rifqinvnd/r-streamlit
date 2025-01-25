@@ -92,7 +92,8 @@ class PageService:
             with st.popover(st.session_state.agent['name']):
                 # Streamlit dropdown option for ai agents
                 ai_agents = self.database_service.get_ai_agents()
-                
+                ai_agents.reverse()
+                                
                 selected_agent = st.radio(
                     label="Choose Character",
                     options=[character["name"] for character in ai_agents],
@@ -100,7 +101,7 @@ class PageService:
                     index=st.session_state.agent["id"] - 1,
                     label_visibility="collapsed",
                 )
-
+                
                 # Change popover label
                 if selected_agent != st.session_state.agent["name"]:
                     st.session_state.agent = next(agent for agent in ai_agents if agent["name"] == selected_agent)
